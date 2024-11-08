@@ -1,0 +1,247 @@
+class Users:
+    users = []
+
+    def __init__(self, user_id, name, email, password, phno, role):
+        self.user_id = user_id
+        self.name = name
+        self.email = email
+        self.__password = password
+        self.phno = phno
+        self.role = role
+
+    @classmethod
+    def add_user(cls, user):
+        cls.users.append(user)
+
+    @staticmethod
+    def display_users():
+        for user in Users.users:
+            print(f"User ID: {user.user_id}, Name: {user.name}, Email: {user.email}, Phone: {user.phno}, Role: {user.role}")
+
+    @staticmethod
+    def validate(email, password, role):
+        for user in Users.users:
+            if email == user.email and password == user.__password and role == user.role:
+                print("Login Successful")
+                return user
+        print("Invalid credentials")
+        return None
+
+
+class Movie:
+    movies = []
+
+    def __init__(self, movie_id, movie_name, duration, rating, cost):
+        self.movie_id = movie_id
+        self.movie_name = movie_name
+        self.duration = duration
+        self.rating = rating
+        self.cost = cost
+
+    @classmethod
+    def add_movie(cls, movie):
+        cls.movies.append(movie)
+
+    @classmethod
+    def display_movies(cls):
+        print("Available Movies:")
+        for movie in cls.movies:
+            print(f"Movie ID: {movie.movie_id}, Name: {movie.movie_name}, Duration: {movie.duration}, Rating: {movie.rating}, Cost: {movie.cost}")
+        print()
+
+
+class Theater:
+    theaters = []
+
+    def __init__(self, theater_id, name, location, movies, rating, seats):
+        self.theater_id = theater_id
+        self.name = name
+        self.location = location
+        self.movies = movies  # List of Movie objects available at this theater
+        self.rating = rating
+        self.seats = seats  # Dictionary to track available seats per movie (e.g., {movie_id: seats})
+
+    @classmethod
+    def add_theater(cls, theater):
+        cls.theaters.append(theater)
+
+    @classmethod
+    def display_theaters(cls):
+        print("Available Theaters:")
+        for theater in cls.theaters:
+            print(f"Theater ID: {theater.theater_id}, Name: {theater.name}, Location: {theater.location}, Rating: {theater.rating}")
+            print("Movies Available:")
+            for movie in theater.movies:
+                print(f"  - {movie.movie_name} (ID: {movie.movie_id}, Duration: {movie.duration}, Cost: {movie.cost})")
+            print()
+
+
+class Payment:
+    payments = []
+
+    def __init__(self, payment_id, user, amount, payment_method):
+        self.payment_id = payment_id
+        self.user = user
+        self.amount = amount
+        self.payment_method = payment_method
+
+    @classmethod
+    def add_payment(cls, payment):
+        cls.payments.append(payment)
+
+    @staticmethod
+    def process_payment(user, amount, payment_method):
+        print(f"Processing payment of {amount} for {user.name} using {payment_method}...")
+        payment_id = len(Payment.payments) + 1
+        payment = Payment(payment_id, user, amount, payment_method)
+        Payment.add_payment(payment)
+        print(f"Payment of {amount} successful for {user.name} using {payment_method}")
+        print()
+        
+
+class Booking:
+    bookings = []
+
+    def __init__(self, booking_id, user, theater, movie, seats_booked, total_cost):
+        self.booking_id = booking_id
+        self.user = user
+        self.theater = theater
+        self.movie = movie
+        self.seats_booked = seats_booked
+        self.total_cost = total_cost
+
+    @classmethod
+    def add_booking(cls, booking):
+        cls.bookings.append(booking)
+
+    @staticmethod
+    def display_bookings():
+        print("Booking History:")
+        for booking in Booking.bookings:
+            print(f"Booking ID: {booking.booking_id}, User: {booking.user.name}, Movie: {booking.movie.movie_name}, Theater: {booking.theater.name}, Seats: {booking.seats_booked}, Total Cost: {booking.total_cost}")
+        print()
+
+
+class BookingSystem:
+    def __init__(self):
+        self.available_theater_list = []
+        self.select_movie_id = None
+        self.selected_theater = None
+
+    def display_theater(self):
+        Movie.display_movies()  # Display all available movies
+
+        # Allow the user to select a movie by ID
+        self.select_movie_id = int(input('Select movie id: '))
+
+        print()
+
+        selected_movie = None
+
+        # Search for the selected movie
+        for movie in Movie.movies:
+            if movie.movie_id == self.select_movie_id:
+                selected_movie = movie
+                break
+
+        if selected_movie:
+            print(f"Available theaters for {selected_movie.movie_name}:")
+
+            for theater in Theater.theaters:
+                if selected_movie in theater.movies:
+                    print(f"  - Theater ID: {theater.theater_id}, Name: {theater.name}, Location: {theater.location}, Rating: {theater.rating}")
+                    self.available_theater_list.append(theater)
+
+            print()
+        else:
+            print("Movie not found.")
+
+    def book_theater(self, user):
+        select_theater_id = int(input("Enter the theater id: "))
+
+        for theater in self.available_theater_list:
+            if theater.theater_id == select_theater_id:
+                for movie in theater.movies:
+                    if movie.movie_id == self.select_movie_id:
+                        print(f"Theater name: {theater.name}, Movie name: {movie.movie_name}, Location: {theater.location}, Price: {movie.cost}")
+                        self.book_seat(theater, movie, user)
+                        return
+
+        print("Theater or movie not found.")
+
+    def book_seat(self, theater, movie, user):
+        available_seats = theater.seats.get(movie.movie_id, 0)
+        print(f"Available seats: {available_seats}")
+
+        if available_seats > 0:
+            seats_to_book = int(input("Enter number of seats to book: "))
+            if seats_to_book <= available_seats:
+                theater.seats[movie.movie_id] -= seats_to_book
+                total_cost = seats_to_book * movie.cost
+                print(f"{seats_to_book} seats booked successfully!")
+
+                # Process payment
+                payment_method = input("Enter payment method (e.g., Credit Card, PayPal): ")
+                Payment.process_payment(user, total_cost, payment_method)
+
+                # Add booking record
+                booking_id = len(Booking.bookings) + 1
+                booking = Booking(booking_id, user, theater, movie, seats_to_book, total_cost)
+                Booking.add_booking(booking)
+
+            else:
+                print("Not enough seats available.")
+        else:
+            print("No seats available.")
+
+
+# Main Program
+if __name__ == "__main__":
+    # Create users
+    user1 = Users(1, 'Priya', 'priya@gmail.com', 'Priya@12345', 8072649175, 'Admin')
+    user2 = Users(2, 'Narmatha', 'narmatha@gmail.com', 'Narmatha@12', 9078563412, 'Customer')
+    Users.add_user(user1)
+    Users.add_user(user2)
+
+    # Validate user
+    validated_user = Users.validate('narmatha@gmail.com', 'Narmatha@12', 'Customer')
+    if not validated_user:
+        exit()
+
+    # Create movies
+    movie1 = Movie(1, 'Leo', '2h 30min', '****', 350)
+    movie2 = Movie(2, 'Amaran', '2hr 15min', '*****', 500)
+    Movie.add_movie(movie1)
+    Movie.add_movie(movie2)
+
+    # Create theaters
+    theater1 = Theater(1, 'RCB', 'Kilambakkam', [movie1], '***', {1: 10})
+    theater2 = Theater(2, 'OP', 'Tamparam', [movie2], '****', {2: 20})
+    theater3 = Theater(3, 'Kamala', 'Kelambakkam', [movie1, movie2], '*****', {1: 30, 2: 25})
+    Theater.add_theater(theater1)
+    Theater.add_theater(theater2)
+    Theater.add_theater(theater3)
+
+    # Initialize the booking system
+    booking_system = BookingSystem()
+
+    # Main Menu Loop
+    while True:
+        print("\n1. Display Movies")
+        print("2. Book Movie")
+        print("3. Display Booking History")
+        print("4. Exit")
+        choice = int(input("Enter your choice: "))
+
+        if choice == 1:
+            Movie.display_movies()
+        elif choice == 2:
+            booking_system.display_theater()
+            booking_system.book_theater(validated_user)
+        elif choice == 3:
+            Booking.display_bookings()
+        elif choice == 4:
+            print("Exiting the system.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
